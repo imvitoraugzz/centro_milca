@@ -1,0 +1,79 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// REQ 01 - Cadastro e Login de Recepcionistas
+model Usuario {
+  id        String   @id @default(uuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("usuarios")
+}
+
+// REQ 02 e 03 - Cadastro e Edição de Pacientes
+model Paciente {
+  id              String        @id @default(uuid())
+  nome            String
+  cartaoSus       String        @unique @map("cartao_sus")
+  dataNascimento  DateTime      @map("data_nascimento")
+  endereco        String
+  telefone        String        // Formato internacional para o WhatsApp: 5599999999999
+  nomeMae         String        @map("nome_mae")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  agendamentos    Agendamento[]
+
+  @@map("pacientes")
+}
+
+// REQ 06 e 07 - Cadastro e Especialidade de Profissionais
+model Profissional {
+  id           String               @id @default(uuid())
+  nome         String
+  areaAtuacao  String               @map("area_atuacao")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  agendas      AgendaProfissional[]
+  agendamentos Agendamento[]
+
+  @@map("profissionais")
+}
+
+// REQ 06 e 07 - Agenda de Disponibilidade Mensal/Horários do Profissional
+model AgendaProfissional {
+  id             String       @id @default(uuid())
+  profissionalId String       @map("profissional_id")
+  data           DateTime     // Data do atendimento (ano-mês-dia)
+  horarioInicio  String       @map("horario_inicio") // Formato "08:00"
+  status         String       @default("DISPONIVEL") // DISPONIVEL, OCUPADO, BLOQUEADO
+
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@unique([profissionalId, data, horarioInicio]) // Impede duplicar o mesmo horário para o mesmo médico
+  @@map("agendas_profissionais")
+}
+
+// REQ 04, 05, 08 e 09 - Agendamentos de Consultas e Histórico
+model Agendamento {
+  id                 String       @id @default(uuid())
+  pacienteId         String       @map("paciente_id")
+  profissionalId     String       @map("profissional_id")
+  dataHora           DateTime     @map("data_hora")
+  status             String       @default("AGENDADO") // AGENDADO, CONFIRMADO, CONCLUIDO, FALTA, CANCELADO
+  notificadoWhatsApp Boolean      @default(false) @map("notificado_whatsapp")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  paciente           Paciente     @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  profissional       Profissional @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
+
+  @@map("agendamentos")
+}

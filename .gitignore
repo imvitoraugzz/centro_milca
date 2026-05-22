@@ -1,0 +1,19 @@
+# Dependências (Não subir de jeito nenhum, são pesadas)
+backend/node_modules/
+frontend/node_modules/
+
+# Variáveis de ambiente (Contém as senhas do seu banco e chaves secretas)
+backend/.env
+.env
+
+# Arquivos gerados pelo sistema ou build
+backend/dist/
+frontend/dist/
+frontend/.next/
+frontend/build/
+node_modules/
+# Logs e arquivos do sistema operacional
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
