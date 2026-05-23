@@ -1,40 +1,27 @@
 datasource db {
   provider = "postgresql"
-<<<<<<< HEAD
   url = env("DATABASE_URL")
-=======
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
+
 }
 
 generator client {
   provider = "prisma-client-js"
 }
-
-<<<<<<< HEAD
-// REQ 01 - Cadastro e Login de Recepcionistas e Admins (Pasta: auth)
-=======
 // REQ 01 - Cadastro e Login de Recepcionistas
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
+
 model Usuario {
   id        String   @id @default(uuid())
   nome      String
   email     String   @unique
   senha     String
-<<<<<<< HEAD
   role      String   @default("RECEPCIONISTA") // "RECEPCIONISTA" ou "ADMIN"
-=======
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("usuarios")
 }
-
-<<<<<<< HEAD
-// REQ 02 e 03 - Cadastro e Edição de Pacientes (Pasta: pacientes)
-=======
 // REQ 02 e 03 - Cadastro e Edição de Pacientes
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
+
 model Paciente {
   id              String        @id @default(uuid())
   nome            String
@@ -49,12 +36,8 @@ model Paciente {
 
   @@map("pacientes")
 }
-
-<<<<<<< HEAD
-// REQ 06 e 07 - Cadastro e Especialidade de Profissionais (Pasta: profissionais)
-=======
 // REQ 06 e 07 - Cadastro e Especialidade de Profissionais
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
+
 model Profissional {
   id           String               @id @default(uuid())
   nome         String
@@ -66,12 +49,8 @@ model Profissional {
 
   @@map("profissionais")
 }
-
-<<<<<<< HEAD
-// REQ 06 e 07 - Agenda de Disponibilidade Mensal/Horários do Profissional (Pasta: agenda)
-=======
 // REQ 06 e 07 - Agenda de Disponibilidade Mensal/Horários do Profissional
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
+
 model AgendaProfissional {
   id             String       @id @default(uuid())
   profissionalId String       @map("profissional_id")
@@ -85,11 +64,7 @@ model AgendaProfissional {
   @@map("agendas_profissionais")
 }
 
-<<<<<<< HEAD
-// REQ 04, 05, 08 e 09 - Agendamentos de Consultas e Histórico (Pasta: agenda / notificacao)
-=======
 // REQ 04, 05, 08 e 09 - Agendamentos de Consultas e Histórico
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
 model Agendamento {
   id                 String       @id @default(uuid())
   pacienteId         String       @map("paciente_id")
