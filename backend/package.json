@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "agendacm",
   "version": "1.0.0",
   "description": "Sistema de agendamento de consultas",
@@ -22,5 +23,33 @@
     "@types/node": "^25.9.1",
     "prisma": "^5.22.0",
     "typescript": "^6.0.3"
+=======
+  "name": "agenda-milca",
+  "version": "1.0.0",
+  "description": "Sistema de agendamentos de consultas destinado ao Centro de Apoio à Pessoa Com Deficiência Milca Gardênia de Araújo",
+  "homepage": "https://github.com/imvitoraugzz/Centro-Milca#readme",
+  "bugs": {
+    "url": "https://github.com/imvitoraugzz/Centro-Milca/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imvitoraugzz/Centro-Milca.git"
+  },
+  "license": "ISC",
+  "author": "imvitoraugzz",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node-dev --node-arg=--experimental-specifier-resolution=node --inspect --transpile-only --ignore-watch node_modules src/server.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "prisma": "^7.8.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
+>>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09
   }
 }
