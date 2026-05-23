@@ -1,0 +1,27 @@
+# Dependências e Compilação
+node_modules/
+dist/
+build/
+
+# Variáveis de Ambiente e Segredos (CRÍTICO)
+.env
+.env.local
+.env.production
+
+# Logs do Node e Gerenciadores de Pacote
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Arquivos do Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de Configuração IDE
+.vscode/
+.idea/
+
+# Prisma (ignora apenas o arquivo gerado de banco SQLite local se houver, mantendo a estrutura)
+*.db
+*.db-journal
