@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
@@ -43,23 +42,3 @@
     "skipLibCheck": true,
   }
 }
-=======
-  "compilerOptions": {
-    /* Layout do Projeto */
-    "rootDir": "./src",                          // Onde estará todo seu código TS
-    "outDir": "./dist",                          // Onde o código compilado JS vai cair
-
-    /* Configurações de Ambiente */
-    "target": "ES2022",                          // Versão do JS moderno no Node.js
-    "module": "NodeNext",                        // Mantém compatibilidade moderna nativa
-    "moduleResolution": "NodeNext",
-    "esModuleInterop": true,                     // Permite importar pacotes CommonJS antigos com 'import'
-
-    /* Qualidade e Segurança do Código */
-    "strict": true,                              // Ativa checagem estrita de tipos (evita bugs de 'undefined')
-    "skipLibCheck": true,                        // Ignora checagem de erros dentro de node_modules (ganha velocidade)
-    "forceConsistentCasingInFileNames": true     // Evita problemas de maiúsculas/minúsculas entre Windows e Linux
-  },
-  "include": ["src/**/*"]                        // Diz ao TS para monitorar apenas a pasta src
-}
->>>>>>> 351d1f5829b51c5e51a9d44bc7a7a127f49b0a09

@@ -7,6 +7,7 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
 // REQ 01 - Cadastro e Login de Recepcionistas
 
 model Usuario {
@@ -39,16 +40,19 @@ model Paciente {
 // REQ 06 e 07 - Cadastro e Especialidade de Profissionais
 
 model Profissional {
-  id           String               @id @default(uuid())
-  nome         String
-  areaAtuacao  String               @map("area_atuacao")
-  createdAt    DateTime             @default(now()) @map("created_at")
-  updatedAt    DateTime             @updatedAt @map("updated_at")
-  agendas      AgendaProfissional[]
-  agendamentos Agendamento[]
+  id             String               @id @default(uuid())
+  nome           String
+  crm            String               @unique // <-- Adicionado para segurança jurídica e unicidade
+  areaAtuacao    String               @map("area_atuacao")
+  tempoConsulta  Int                  @default(20) @map("tempo_consulta") // <-- Adicionado (em minutos) para cálculo de grade
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  agendas        AgendaProfissional[]
+  agendamentos   Agendamento[]
 
   @@map("profissionais")
 }
+
 // REQ 06 e 07 - Agenda de Disponibilidade Mensal/Horários do Profissional
 
 model AgendaProfissional {
@@ -63,6 +67,7 @@ model AgendaProfissional {
   @@unique([profissionalId, data, horarioInicio]) // Impede duplicar o mesmo horário para o mesmo médico
   @@map("agendas_profissionais")
 }
+
 
 // REQ 04, 05, 08 e 09 - Agendamentos de Consultas e Histórico
 model Agendamento {

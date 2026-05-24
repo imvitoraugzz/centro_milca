@@ -5,7 +5,7 @@ import { CreateUsuarioDTO, AuthResponseDTO, LoginDTO, LoginResponseDTO } from '.
 
 export class AuthService {
     // REQ 01 - Cadastro de recepcionista
-    private jwtSecret = process.env.JWT_SECRET || 'naoadivinheotoken'
+    private jwtSecret = process.env.JWT_SECRET
 
     async registrar({ nome, email, senha, role } : CreateUsuarioDTO ) : Promise<AuthResponseDTO>{
         const usuarioExistente = await prisma.usuario.findUnique({ where : { email } })
@@ -24,6 +24,9 @@ export class AuthService {
     }
 
     async login({ email, senha} : LoginDTO) : Promise<LoginResponseDTO> {
+        if(!this.jwtSecret){
+            throw new Error(' Chave de segurança não configurada.')
+        }
         const usuario = await prisma.usuario.findUnique({ where: { email } })
         if(!usuario){
             throw new Error('Email ou senha inválidos.')

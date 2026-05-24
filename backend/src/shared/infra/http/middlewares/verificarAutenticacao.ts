@@ -6,20 +6,24 @@ interface TokenPayLoad {
     role: string
 }
 
+
 export function verificarAutenticacao(req: Request, res: Response, next: NextFunction){
     const authHeader = req.headers.authorization
-
+    
     if(!authHeader){
         return res.status(401).json({ error: 'Token de autenticação não fornecido.'})
     }
-
+    
     const parts = authHeader.split(' ')
     if(parts.length !== 2 || parts[0] !== 'Bearer'){
         return res.status(401).json({ error: 'Erro o formato de token enviado.'})
     }
-
+    
     const token = parts[1]
-    const jwtSecret =  process.env.JWT_SECRET || 'naoadvinheotoken'
+    const jwtSecret =  process.env.JWT_SECRET
+    if(!jwtSecret){
+        return res.status(500).json({ error: 'Erro de configuração interna do servidor.' })
+    }
 
     try {
         const decoded = jwt.verify(token, jwtSecret)
