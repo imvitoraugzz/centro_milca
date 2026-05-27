@@ -8,7 +8,7 @@ export class AgendaController {
         this.agendaService = new AgendaService()
     }
 
-    public criarAgendamento = async (req: Request, res: Response): Promise<Response> => {
+    public gerarGrade = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { profissionalId, ano, mes, diasSemana, horarioInicio, horarioFim } = req.body
 
@@ -74,8 +74,58 @@ export class AgendaController {
                 data,
                 horario })
                 return res.status(201).json(agendamento)
-        } catch(erro){
+        } catch(erro: any){
             return res.status(400).json({ error: erro.message || 'Erro ao criar agendamento.'})
+        }
+    }
+
+    public remarcarConsulta = async( req: Request, res: Response): Promise<Response> => {
+        try {
+            const { id } = req.params //id do agendamento que vem na URL
+            const { novaData, novoHorario } = req.body
+
+            if(!novaData || !novoHorario) {
+                return res.status(400).json({ error: 'Nova data e horário são obrigatórios.'})
+            }
+
+            const agendamentoRemarcado = await this.agendaService.remarcarConsulta({
+                agendamentoId: id,
+                novaData,
+                novoHorario
+            })
+            return res.status(200).json(agendamentoRemarcado)
+        } catch(erro: any){
+            return res.status(400).json({ error: erro.message || 'Erro ao remarcar consulta.'})
+        }
+    } 
+
+    public obterRelatorio = async (req: Request, res: Response): Promise<Response> => {
+        try {
+            const { periodo, dataReferencia } = req.query
+
+            if(!periodo || !dataReferencia) {
+                return res.status(400).json({ error: 'Período e dataReferencia são obrigatórios.'})
+            }
+
+            const relatorio = await this.agendaService.gerarRelatorioQuantitativo({
+                periodo: periodo as 'dia' | 'semana' | 'mes',
+                dataReferencia: String(dataReferencia)
+            })
+
+            return res.status(200).json(relatorio)
+        } catch(erro: any){
+            return res.status(400).json({ error: erro.message || 'Erro ao gerar relatório.'})
+        }
+    }
+
+    public obterFaltasPaciente = async (req: Request, res: Response): Promise<Response> => {
+        try {
+            const { pacienteId } = req.params
+
+            const historico = await this.agendaService.contabilizarFaltasPaciente(pacienteId)
+            return res.status(200).json(historico)
+        } catch(erro: any){
+            return res.json(400).json({ error : erro.message || 'Erro ao contabilizar faltas do paciente.'})
         }
     }
 }

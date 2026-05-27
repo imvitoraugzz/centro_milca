@@ -7,10 +7,15 @@ const agendaController = new AgendaController()
 
 agendaRoutes.use(verificarAutenticacao)
 
-agendaRoutes.post('/criar', agendaController.criarAgendamento)
+//Rotas Administrativas de configuração da agenda
+agendaRoutes.post('/grade', agendaController.gerarGrade)
 agendaRoutes.post('/bloquear', agendaController.bloquearData)
 
+//Rotas de Operação de consultas por pacientes
 agendaRoutes.get('/horarios', agendaController.listarHorarios)
 agendaRoutes.post('/agendar', agendaController.criarAgendamento)
+agendaRoutes.patch('/agendar/:id/remarcar', agendaController.remarcarConsulta)
+agendaRoutes.get('/relatorio', agendaController.obterRelatorio)
+agendaRoutes.get('/pacientes/:pacienteId/faltas', agendaController.obterFaltasPaciente)
 
 export { agendaRoutes }

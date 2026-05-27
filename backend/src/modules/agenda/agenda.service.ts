@@ -1,9 +1,11 @@
 import { prisma } from '../../config/database'
-import { GerarGradeMensalDTO, BloquearAgendaDTO, AlertaChoqueResponseDTO } from './agenda.dto'
-import type AgendamentoResponseDTO = require('./agenda.dto')
+import { GerarGradeMensalDTO, BloquearAgendaDTO, AlertaChoqueResponseDTO, CriarAgendamentoDTO, BuscarHorariosLivresDTO, AgendamentoResponseDTO, RemarcarConsultaDTO } from './agenda.dto'
+
 
 export class AgendaService {
-    async gerarGradeMensal (dados: GerarGradeMensalDTO { profissionalId, ano, mes, diasSemana, horarioInicio, horarioFim }): Promise<number> {
+    async gerarGradeMensal (dados: GerarGradeMensalDTO): Promise<number> {
+        const { profissionalId, ano, mes, diasSemana, horarioInicio, horarioFim } = dados
+        
         //Verificar se o profissional existe
         const profissional = await prisma.profissional.findUnique({ where: { id: dados.profissionalId }})
         if(!profissional){
@@ -35,6 +37,12 @@ export class AgendaService {
         //Percorrer dos dias do mês e filtrar pelos dias da semana escolhidos
         for(let dia = 1; dia <= totalDias; dia++){
             const dataAtual = new Date(ano, mes -1, dia)
+
+            //Bloqueio preventivo: se por erro do front enviarem domingo (0) ou sábado (6)
+            if(dataAtual.getDay() === 0 || dataAtual.getDay() === 6){
+                continue
+            }
+
             if(diasSemana.includes(dataAtual.getDay())){
                 //Zera o componente de hora para armazenar no banco de dados puramente a data
                 dataAtual.setHours(0, 0, 0, 0)
@@ -42,7 +50,7 @@ export class AgendaService {
                 for(const horario of horarios) {
                     try { 
                         //Insere ignorando duplicatas se rodar o comando duas vezes
-                        await prisma.agendamento.create({
+                        await prisma.agendaProfissional.create({
                             data: {
                                 profissionalId,
                                 data: dataAtual,
@@ -84,7 +92,7 @@ export class AgendaService {
             const pacientesAfetados = agendamentosConflitantes.map(a => ({
                 agendamentoId: a.id,
                 pacienteNome: a.paciente.nome,
-                horario: a.dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timezone: 'UTC'})
+                horario: a.dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC'})
             }))
             return {
                 conflito: true,
@@ -92,7 +100,7 @@ export class AgendaService {
             }
         }
 
-        await prisma.agendamento.updateMany({
+        await prisma.agendaProfissional.updateMany({
             where: {
                 profissionalId,
                 data: dataBloqueio
@@ -109,7 +117,7 @@ export class AgendaService {
     }
 
     //REQ 04 - Listar horários disponíveis de um profissional, a partir do dia seguinte
-    async listarHorariosDisponiveis( profissionalId: string, data: string): BuscarHorariosLivresDTO {
+    async listarHorariosDisponiveis( {profissionalId, data }: BuscarHorariosLivresDTO): Promise<string[]> {
         const dataConsulta = new Date(data)
         dataConsulta.setHours(0, 0, 0, 0)
 
@@ -123,7 +131,7 @@ export class AgendaService {
         }
 
         //Busca na tabela de agendas o que está explicitamente como DISPONÍVEL
-        const horariosDisponiveis = await prisma.agendamento.findMany({
+        const horariosDisponiveis = await prisma.agendaProfissional.findMany({
             where: {
                 profissionalId,
                 data: dataConsulta,
@@ -161,6 +169,10 @@ export class AgendaService {
             throw new Error('Consultas só podem ser agendadas a partir do dia seguinte.')
         }
 
+        //Regra de negócio: impedir agendamento direto em fins de semana.
+        if(dataAlvoPura.getDay() === 0 || dataAlvoPura.getDay() === 6){
+            throw new Error('Consultas só podem ser agendadas em dias úteis')
+        }
         //Verifica se a agenda está realmente disponível para agendamentos.
         const agenda = await prisma.agendaProfissional.findUnique({
             where: {
@@ -177,8 +189,8 @@ export class AgendaService {
         }
 
         //Executa transação no banco: muda o slot para OCUPADO e cria o registro de agendamento
-        const [agendamento] = await prisma.$transaction([
-            prisma.agendamento.update({
+        const [agendamentoAtualizado] = await prisma.$transaction([
+            prisma.agendamento.create({
                 data: {
                     pacienteId,
                     profissionalId,
@@ -196,7 +208,186 @@ export class AgendaService {
                 }
             })
         ])
-        return agendamento
+        return agendamentoAtualizado
     }
 
+    //REQ 05 - Editar e remarcar consulta liberando data/hora antiga e ocupando nova data/hora
+    async remarcarConsulta({ agendamentoId, novaData, novoHorario }: RemarcarConsultaDTO): Promise<AgendamentoResponseDTO> {
+        //Buscar agendamento atual com dados do profissional
+        const agendamentoAtual = await prisma.agendamento.findUnique({
+            where: { id: agendamentoId }
+        })
+
+        if(!agendamentoAtual){
+            throw new Error('Agendamento não encontrado.')
+        }
+
+        if(agendamentoAtual.status !== 'AGENDADO'){
+            throw new Error('Apenas consultas com status AGENDADO podem ser remarcadas.')
+        }
+
+        //Combinar nova data e horário e aplicar a regra de ouro: apenas a partir do dia seguinte
+        const [horas, minutos] = novoHorario.split(':').map(Number)
+        const novaDataHora = new Date(novaData)
+        novaDataHora.setHours(horas, minutos, 0, 0)
+
+        const amanha = new Date()
+        amanha.setDate(amanha.getDate() + 1)
+        amanha.setHours(0, 0, 0, 0)
+
+        const novaDataPura = new Date(novaData)
+        novaDataPura.setHours(0, 0, 0, 0)
+
+        if(novaDataPura.getTime() < amanha.getTime()){
+            throw new Error('Consultas só podem ser reagendadas a patir do dia seguinte.')
+        }
+
+        //Verificar se a nova data/hora está disponível
+        const novoAgendamento = await prisma.agendaProfissional.findUnique({
+            where: {
+                profissionalId_data_horarioInicio: {
+                    profissionalId: agendamentoAtual.profissionalId,
+                    data: novaDataPura,
+                    horarioInicio: novoHorario
+                }
+            }
+        })
+
+        if(!novoAgendamento || novoAgendamento.status !== 'DISPONIVEL'){
+            throw new Error('Nova data/hora não disponível para agendamento.')
+        }
+
+        //Descobrir o ID do slot antigo para liberar e do novo para ocupar
+        const dataAntigaPura = new Date(agendamentoAtual.dataHora)
+        dataAntigaPura.setHours(0, 0, 0, 0)
+        const horarioAntigo = agendamentoAtual.dataHora.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'UTC' 
+        })
+
+        const slotAntigo = await prisma.agendaProfissional.findUnique({
+            where: {
+                profissionalId_data_horarioInicio: {
+                    profissionalId: agendamentoAtual.profissionalId,
+                    data: dataAntigaPura,
+                    horarioInicio: horarioAntigo
+                }
+            }
+        })
+
+        //Transação Atômica: executa todas as alterações juntas ou falha tudo
+        const [agendamentoAtualizado] = await prisma.$transaction([
+            //Atualiza o agendamento com nova data/hora
+            prisma.agendamento.update({
+                where: { id: agendamentoId},
+                data: {
+                    dataHora: novaDataHora,
+                    notificadoWhatsapp: false //O motor de disparo precisará avisá-lo do novo horário
+                }
+            }),
+
+            //Ocupa novo slot de tempo
+            prisma.agendaProfissional.update({
+                where: { id: novoAgendamento.id},
+                data: { status: 'OCUPADO'}
+            }),
+
+            //Libera slot antigo, caso esteja de acordo com a regra
+            ...(slotAntigo && slotAntigo.status === 'OCUPADO' ? [ prisma.agendaProfissional.update({
+                where: { id: slotAntigo.id},
+                data: { status: 'DISPONIVEL'} 
+            })] : [])
+        ])
+        return agendamentoAtualizado
+    }
+
+    //REQ 08 - Gerar relatórios quantitativos de consultas por dia, semana, mês
+    async gerarRelatorioQuantitativo({ periodo, dataReferencia }: RelatorioQuantitativoDTO): Promise<RelatorioQuantitativoResponseDTO> {
+        const dataInicio = new Date(dataReferencia)
+        dataInicio.setHours(0, 0, 0, 0)
+
+        const dataFim = new Date(dataReferencia)
+        dataFim.setHours(23, 59, 59, 999)
+
+        if(periodo === 'semana') {
+            //Ajusta o início para a segunda da semana da data informada e o fim para sexta.
+            const diaSemana = dataInicio.getDay()
+            const distanciaSegunda = diaSemana === 0 ? 6 : 1 - diaSemana 
+            dataInicio.setDate(dataInicio.getDate() + distanciaSegunda)
+
+            dataFim.setTime(dataInicio.getTime())
+            dataFim.setDate(dataFim.getDate() + 4) //+4 dias pra sexta
+            dataFim.setHours(23, 59, 59, 999)
+        } else if(periodo === 'mes') {
+            //Ajusta para o primeiro e último dia do mês corrido
+            dataInicio.setDate(1)
+            dataFim.setMonth(dataFim.getMonth() + 1)
+            dataFim.setDate(0)
+        }
+
+        //Agrupa e conta direto do banco usando a agregação do Prisma
+        const agregados = await prisma.agendamento.groupBy({
+            by: ['status'],
+            where: {
+                dataHora: {
+                    gte: dataInicio,
+                    lte: dataFim
+                }
+            },
+            _count: {
+                id: true
+            }
+        })
+
+        //Inicializa com zero para todos os status
+        const contagem = {
+            AGENDADO : 0,
+            CONFIRMADO : 0,
+            CONCLUIDO : 0,
+            FALTA: 0,
+            CANCELADO : 0
+        }
+        
+        agregados.forEach( item => {
+            if( item.status in contagem){
+                contagem[item.status as keyof typeof contagem] = item._count.id
+            }
+        })
+
+        const totalGeral = Object.values(contagem).reduce(( acc, curr ) => acc + curr, 0)
+        return {
+            periodo,
+            totalAgendamentos: contagem.AGENDADO,
+            totalConfirmados: contagem.CONFIRMADO,
+            totalConcluidos: contagem.CONCLUIDO,
+            totalCancelados: contagem.CANCELADO,
+            totalFaltas: contagem.FALTA,
+            totalGeral
+        }
+    }
+
+    //REQ 09 - Contabilizar
+    async contabilizarFaltasPaciente( pacienteId: string): Promise<HistoricoFaltasResponseDTO> {
+        const paciente = await prisma.paciente.findUnique({
+            where: { id: pacienteId },
+        })
+
+        if(!paciente) {
+            throw new Error('Paciente não encontrado.')
+        }
+
+        const totalFaltas = await prisma.agendamento.count({
+            where: {
+                pacienteId,
+                status: 'FALTA'
+            }
+        })
+
+        return {
+            pacienteId,
+            pacienteNome: paciente.nome,
+            totalFaltas
+        }
+    }
 }
