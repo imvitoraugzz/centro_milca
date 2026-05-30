@@ -1,5 +1,10 @@
 import { prisma } from '../../config/database'
-import { GerarGradeMensalDTO, BloquearAgendaDTO, AlertaChoqueResponseDTO, CriarAgendamentoDTO, BuscarHorariosLivresDTO, AgendamentoResponseDTO, RemarcarConsultaDTO } from './agenda.dto'
+import { 
+    GerarGradeMensalDTO, BloquearAgendaDTO,
+    AlertaChoqueResponseDTO, CriarAgendamentoDTO,
+    BuscarHorariosLivresDTO, AgendamentoResponseDTO,
+    RemarcarConsultaDTO, RelatorioQuantitativoDTO,
+    RelatorioQuantitativoResponseDTO, HistoricoFaltasResponseDTO} from './agenda.dto'
 
 
 export class AgendaService {
@@ -19,8 +24,8 @@ export class AgendaService {
 
         //Gerar os intervalos de 30 minutos baseado em strings
         const horarios: string[] = []
-        let [horaAtual, minutoAtual] = horarioInicio.split(':').map(Number)
-        const [horaFim, minutoFim] = horarioFim.split(':').map(Number)
+        let [horaAtual = 0, minutoAtual = 0] = horarioInicio.split(':').map(Number)
+        const [horaFim = 0, minutoFim = 0] = horarioFim.split(':').map(Number)
 
         const limiteMinutos = horaFim * 60 + minutoFim
         let atualEmMinutos = horaAtual * 60 + minutoAtual
@@ -60,7 +65,7 @@ export class AgendaService {
                         })
                         registrosCriados++
                     } catch(erro) {
-
+                        //Ignora as chaves duplicadas com segurança
                     }
                 }
             }
@@ -92,7 +97,7 @@ export class AgendaService {
             const pacientesAfetados = agendamentosConflitantes.map(a => ({
                 agendamentoId: a.id,
                 pacienteNome: a.paciente.nome,
-                horario: a.dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC'})
+                horario: a.dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo'})
             }))
             return {
                 conflito: true,
@@ -153,7 +158,7 @@ export class AgendaService {
         }
 
         //Combinar a data e horário em um único objeto Date
-        const [horas, minutos] = horario.split(':').map(Number)
+        const [horas = 0, minutos = 0] = horario.split(':').map(Number)
         const dataHoraConsulta = new Date(data)
         dataHoraConsulta.setHours(horas, minutos, 0, 0)
 
@@ -196,7 +201,7 @@ export class AgendaService {
                     profissionalId,
                     dataHora: dataHoraConsulta,
                     status: 'AGENDADO',
-                    notificadoWhatsapp: false
+                    notificadoWhatsApp: false
                 }
             }),
             prisma.agendaProfissional.update({
@@ -227,7 +232,7 @@ export class AgendaService {
         }
 
         //Combinar nova data e horário e aplicar a regra de ouro: apenas a partir do dia seguinte
-        const [horas, minutos] = novoHorario.split(':').map(Number)
+        const [horas = 0, minutos = 0] = novoHorario.split(':').map(Number)
         const novaDataHora = new Date(novaData)
         novaDataHora.setHours(horas, minutos, 0, 0)
 
@@ -263,7 +268,7 @@ export class AgendaService {
         const horarioAntigo = agendamentoAtual.dataHora.toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',
-            timeZone: 'UTC' 
+            timeZone: 'America/Sao_Paulo' 
         })
 
         const slotAntigo = await prisma.agendaProfissional.findUnique({
@@ -283,7 +288,7 @@ export class AgendaService {
                 where: { id: agendamentoId},
                 data: {
                     dataHora: novaDataHora,
-                    notificadoWhatsapp: false //O motor de disparo precisará avisá-lo do novo horário
+                    notificadoWhatsApp: false //O motor de disparo precisará avisá-lo do novo horário
                 }
             }),
 

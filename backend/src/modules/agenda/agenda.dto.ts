@@ -39,7 +39,7 @@ export interface AgendamentoResponseDTO {
     profissionalId: string
     dataHora: Date
     status: string
-    notificadoWhatsapp: boolean
+    notificadoWhatsApp: boolean
 }
 
 export interface RemarcarConsultaDTO {
